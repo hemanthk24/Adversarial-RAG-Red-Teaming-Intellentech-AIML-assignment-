@@ -32,7 +32,7 @@ st.markdown(
 )
 
 st.markdown(
-    '<div class="main-caption">Evidence-grounded healthcare assistant powered by LangGraph + Pinecone</div>',
+    '<div class="main-caption">Evidence-grounded healthcare assistant powered by LangGraph + Pinecone (Intellentech assignment)</div>',
     unsafe_allow_html=True
 )
 
