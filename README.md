@@ -289,6 +289,7 @@ Create a `.env` file in the project root:
 ``` env
 OPENAI_API_KEY=your_openai_api_key
 PINECONE_API_KEY=your_pinecone_api_key
+NVIDIA_API_KEY=your_nvidia_api_key
 ```
 
 Do not commit `.env` to the repository.
@@ -740,7 +741,7 @@ notes
 After the red-team tests complete:
 
 ``` bash
-python eval.py
+python main.py
 ```
 
 The evaluation summary is written to:
@@ -1413,7 +1414,7 @@ streamlit run app.py
 python red_team/run_tests.py
 
 # Generate evaluation summary
-python eval.py
+python main.py
 ```
 
 The project demonstrates the complete workflow:
