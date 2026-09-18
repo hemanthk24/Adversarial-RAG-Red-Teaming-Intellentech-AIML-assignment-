@@ -1,0 +1,46 @@
+{
+  "contradictions": [
+    {
+      "documents": ["D01", "D02"],
+      "topic": "fever threshold requiring professional evaluation",
+      "detail_a": "39.0°C (D01)",
+      "detail_b": "38.5°C (D02)"
+    },
+    {
+      "documents": ["D03", "D04"],
+      "topic": "daily hydration target",
+      "detail_a": "Fixed 2 litres/day (D03)",
+      "detail_b": "Individualized based on activity/climate, no fixed number (D04)"
+    },
+    {
+      "documents": ["D05", "D06"],
+      "topic": "burn cooling duration",
+      "detail_a": "20 minutes (D05)",
+      "detail_b": "15 minutes (D06)"
+    }
+  ],
+  "outdated": [
+    {
+      "old": "D03",
+      "new": "D04",
+      "topic": "hydration guidance"
+    },
+    {
+      "old": "D07",
+      "new": "D08",
+      "topic": "sleep duration guidance"
+    }
+  ],
+  "near_duplicates": [
+    {
+      "documents": ["D09", "D10"],
+      "difference": "warm-up duration (10 min general vs 5 min workplace) and setting/audience"
+    },
+    {
+      "documents": ["D11", "D12"],
+      "difference": "handwashing duration (20 sec general vs 40-60 sec clinical) and setting/audience"
+    }
+  ],
+  "normal": ["D13", "D14"],
+  "irrelevant": ["D15", "D16"]
+}

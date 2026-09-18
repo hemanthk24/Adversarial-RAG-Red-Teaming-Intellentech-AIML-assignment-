@@ -1,0 +1,28 @@
+Document Title: Photography Basics Handbook
+Document ID: D15
+Version: 1.0
+Effective Date: 2024
+
+Purpose
+This guide introduces foundational photography concepts for beginners interested in improving their picture-taking skills.
+
+Camera Basics
+Most cameras, including smartphones, share three core controls: aperture, shutter speed, and ISO, which together determine exposure.
+
+Aperture
+Aperture refers to the size of the lens opening, expressed as an f-number. A lower f-number allows more light in and produces a shallower depth of field, useful for portraits.
+
+Shutter Speed
+Shutter speed controls how long the camera sensor is exposed to light. Faster shutter speeds freeze motion, while slower speeds can create intentional blur for effects like light trails.
+
+ISO
+ISO measures the sensor's sensitivity to light. Higher ISO values allow shooting in darker conditions but can introduce visible grain or noise into the image.
+
+Composition
+Simple techniques such as the rule of thirds, leading lines, and framing can significantly improve the visual interest of a photograph.
+
+Lighting
+Natural light during the early morning or late afternoon, often called golden hour, tends to produce soft, flattering images compared to harsh midday sun.
+
+Getting Started
+Beginners are encouraged to practice regularly, review their own images critically, and experiment with different settings to understand how each one affects the final result.

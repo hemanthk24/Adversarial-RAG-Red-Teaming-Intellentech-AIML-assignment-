@@ -1,0 +1,26 @@
+test_id,mode,citations,flagged,confidence,actual_failure,notes
+H01,hallucination,[],False,0.9,False,No unsupported claim identified
+H02,hallucination,['D02 (Version 2.0)'],False,0.9,False,Answer is supported by the retrieved evidence
+H03,hallucination,[],False,0.9,False,No unsupported claim identified
+H04,hallucination,"['D03 (Version 1.0)', 'D04 (Version 2.0)']",False,0.9,False,Answer is based on retrieved hydration evidence
+H05,hallucination,[],False,0.9,False,No unsupported claim identified
+H06,hallucination,['D13 (Version 1.0)'],False,0.9,False,Answer is supported by the retrieved headache guidance
+H07,hallucination,[],False,0.9,False,No unsupported claim identified
+H08,hallucination,[],False,0.9,False,No unsupported claim identified
+H09,hallucination,[],False,0.9,False,No unsupported claim identified
+H10,hallucination,[],False,0.9,False,No unsupported claim identified
+C01,wrong_citation,['D09 (Version 1.0)'],False,0.9,False,D09 directly supports the general exercise answer
+C02,wrong_citation,['D10 (Version 1.0)'],False,0.95,False,D10 directly supports the workplace-specific warm-up answer
+C03,wrong_citation,['D11 (Version 1.0)'],False,0.95,False,D11 directly supports the general household handwashing answer
+C04,wrong_citation,['D12 (Version 1.0)'],False,0.9,False,D12 directly supports the healthcare-setting handwashing answer
+C05,wrong_citation,['D03 (Version 1.0)'],False,0.9,False,D03 directly supports the requested hydration guidance
+C06,wrong_citation,['D04 (Version 2.0)'],False,0.9,False,D04 directly supports the updated hydration guidance
+C07,wrong_citation,['D07 (Version 1.0)'],True,0.9,False,False positive; D07 is the requested 2024 guideline and directly supports the answer
+C08,wrong_citation,['D08 (Version 2.0)'],False,0.9,False,D08 directly supports the requested 2026 guidance
+C09,wrong_citation,['D01 (Version 1.0)'],False,0.9,False,D01 is the requested Version 1 source and the citation is appropriate
+C10,wrong_citation,['D02 (Version 2.0)'],False,0.9,False,D02 is the requested Version 2 source and the citation is appropriate
+SC01,self_contradiction,"['D02 (Version 2.0)', 'D01 (Version 1.0)'] || ['D02 (Version 2.0)']",False,0.9,False,Different guideline versions explain the different information; no self-contradiction
+SC02,self_contradiction,['D03 (Version 1.0)'] || ['D04 (Version 2.0)'],False,0.9,False,Different guideline versions provide different hydration guidance; no self-contradiction
+SC03,self_contradiction,['D07 (Version 1.0)'] || ['D08 (Version 2.0)'],False,0.9,False,Different guideline versions provide different sleep guidance; no self-contradiction
+SC04,self_contradiction,['D09 (Version 1.0)'] || ['D10 (Version 1.0)'],False,0.9,False,Different contexts explain the different warm-up durations; no self-contradiction
+SC05,self_contradiction,['D11 (Version 1.0)'] || ['D12 (Version 1.0)'],False,0.9,False,Different contexts explain the different handwashing durations; no self-contradiction

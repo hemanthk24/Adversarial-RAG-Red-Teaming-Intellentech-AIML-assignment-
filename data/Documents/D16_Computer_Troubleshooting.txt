@@ -1,0 +1,28 @@
+Document Title: Basic Computer Troubleshooting Guide
+Document ID: D16
+Version: 1.0
+Effective Date: 2024
+
+Purpose
+This guide provides general troubleshooting steps for common computer issues encountered by everyday users.
+
+Computer Won't Start
+If a computer does not power on, first check that it is properly plugged in and that the outlet is functioning. Try a different outlet or cable if available.
+
+Restarting
+Many minor issues, such as slow performance or unresponsive programs, can be resolved with a simple restart, which clears temporary memory and closes stuck processes.
+
+Power Connection
+For laptops, ensure the charger is fully connected at both ends and check for any visible damage to the cable. A blinking or absent charging light may indicate a hardware issue.
+
+Storage
+Running low on storage space can cause slow performance or failed updates. Removing unused files or applications can help free up space.
+
+Operating System Updates
+Keeping the operating system updated helps ensure compatibility with software and can resolve known bugs. Updates should be installed during periods when the device is not in active use.
+
+Basic Troubleshooting
+Other general steps include checking cable connections, restarting network equipment, and running built-in diagnostic tools before seeking professional repair assistance.
+
+When to Seek Help
+If basic steps do not resolve the issue, or if there are signs of hardware failure such as unusual noises or overheating, professional repair support is recommended.

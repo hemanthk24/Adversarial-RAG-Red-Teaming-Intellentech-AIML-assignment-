@@ -1,0 +1,13 @@
+langchain
+langchain-openai
+langgraph
+langchain-pinecone
+pinecone
+langsmith
+rank_bm25
+python-dotenv
+langchain-community
+langchain-core
+streamlit
+langchain-nvidia-ai-endpoints
+
