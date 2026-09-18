@@ -7,5 +7,5 @@ if __name__ == "__main__":
     
     updated_path = "results/after_update_red_team_test_results_summary.csv"
 
-    # Generate the failure summary
+    # Generate the failure summary (before runnig this run the red_team/run_tests.py file for the csv files)
     summary = generate_failure_summary(csv_path=updated_path)
