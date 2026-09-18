@@ -289,7 +289,6 @@ Create a `.env` file in the project root:
 ``` env
 OPENAI_API_KEY=your_openai_api_key
 PINECONE_API_KEY=your_pinecone_api_key
-NVIDIA_API_KEY=your_nvidia_api_key
 ```
 
 Do not commit `.env` to the repository.
@@ -741,7 +740,7 @@ notes
 After the red-team tests complete:
 
 ``` bash
-python main.py
+python eval.py
 ```
 
 The evaluation summary is written to:
@@ -773,7 +772,7 @@ The evaluation calculates:
 
 The baseline RAG system was evaluated using the same 25 adversarial test cases before applying the targeted update.
 
-The test distribution was:
+## 24.1 Test Distribution
 
 | Failure Mode | Number of Tests |
 |---|---:|
@@ -782,7 +781,7 @@ The test distribution was:
 | Self-Contradiction | 5 |
 | **Total** | **25** |
 
-## 24.1 Baseline Failure Rates
+## 24.2 Baseline Failure Rates
 
 | Failure Mode | Total Tests | Actual Failures | Failure Rate | Detector Flags |
 |---|---:|---:|---:|---:|
@@ -791,13 +790,9 @@ The test distribution was:
 | Self-Contradiction | 5 | 0 | 0% | 1 |
 | **Overall** | **25** | **1** | **4%** | **5** |
 
-The baseline system had **1 confirmed failure out of 25 tests**, giving an observed failure rate of **4%**.
+The baseline system had **1 confirmed failure out of 25 tests**, giving an observed failure rate of **4%**. The confirmed failure occurred in the wrong-citation category.
 
-The confirmed failure occurred in the **wrong-citation** category.
-
----
-
-## 24.2 Baseline Detector Performance
+## 24.3 Baseline Detector Performance
 
 | Metric | Hallucination | Wrong Citation | Self-Contradiction | Overall |
 |---|---:|---:|---:|---:|
@@ -813,31 +808,635 @@ The confirmed failure occurred in the **wrong-citation** category.
 
 ### Baseline Interpretation
 
-The baseline detector correctly identified the confirmed C02 failure.
-
-However, it also produced several false positives:
-
-- C07
-- C09
-- C10
-- SC04
-
-Therefore, the detector had:
+The detector correctly identified the confirmed C02 failure, but it also produced several false positives. Therefore, the baseline evaluation contained:
 
 - **1 true positive**
 - **4 false positives**
 - **0 false negatives**
+- **20 true negatives**
 
-The main RAG failure observed in the baseline was the wrong citation in C02.
+The main observed RAG failure was the wrong citation in C02.
 
 ---
 
-# 25. Baseline Failure Analysis
+# 25. Baseline Failure: C02
 
-## C02 — Wrong Citation
-
-### Test
+## Test Information
 
 ```text
 Test ID: C02
-Failure Mode: Wrong Citation
+Failure Mode: wrong_citation
+flagged = True
+actual_failure = True
+```
+
+The test targeted the difference between:
+
+```text
+D09 → General Exercise
+D10 → Workplace Exercise
+```
+
+Both documents discuss exercise and are therefore semantically similar, but the question specifically targeted the workplace context.
+
+### What Went Wrong?
+
+The baseline system could retrieve information from both similar documents and mix information between the contexts during answer generation and citation selection.
+
+This resulted in incorrect source attribution.
+
+### Root Cause
+
+The observed root cause was:
+
+> **Context/source attribution confusion between similar documents.**
+
+The baseline generation process did not explicitly require the model to check the document context, scope, version, and effective date before selecting evidence and citations.
+
+---
+
+# 26. Baseline False Positives
+
+The baseline detector also produced false positives.
+
+### C07
+
+The detector flagged C07, but manual evaluation determined that the requested 2024 source was appropriate.
+
+```text
+flagged = True
+actual_failure = False
+```
+
+Therefore, C07 was a false positive.
+
+### C09 and C10
+
+C09 and C10 were also flagged by the detector but were not confirmed as actual citation failures during manual verification.
+
+### SC04
+
+SC04 was flagged as a self-contradiction, but manual evaluation determined that the difference was caused by different contexts:
+
+```text
+D09 → General Exercise
+D10 → Workplace Exercise
+```
+
+Different context-specific recommendations do not automatically represent a contradiction.
+
+### Baseline Detector Summary
+
+```text
+Actual failures   = 1
+False positives   = 4
+False negatives   = 0
+True negatives    = 20
+```
+
+---
+
+# 27. Targeted Update
+
+After analyzing the baseline failure, the RAG pipeline was updated to improve **context-aware retrieval and generation**.
+
+The update included:
+
+1. Chunk size `300 → 400`
+2. Chunk overlap `50 → 60`
+3. Hybrid semantic + BM25 retrieval
+4. MMR retrieval
+5. Controlled retrieval context
+6. Metadata-aware generation
+7. More precise generation instructions
+8. Structured citation selection
+
+These changes were treated as one combined targeted intervention focused on reducing the source-attribution problem observed in C02.
+
+## 27.1 Configuration Comparison
+
+| Component | Baseline | Updated |
+|---|---|---|
+| Chunk Size | 300 | 400 |
+| Chunk Overlap | 50 | 60 |
+| Retrieval | Semantic | Hybrid |
+| Keyword Retrieval | Not used | BM25 |
+| Semantic Selection | Similarity | MMR |
+| Pinecone `k` | Baseline configuration | 3 |
+| MMR `fetch_k` | Not used | 8 |
+| MMR `lambda_mult` | Not used | 0.5 |
+| BM25 `k` | Not used | 3 |
+| Generation Prompt | Basic evidence prompt | Metadata-aware prompt |
+| Citation Handling | Retrieved-source handling | Structured citation selection |
+
+---
+
+# 28. Chunking, Retrieval and Generation Changes
+
+## 28.1 Chunking
+
+### Baseline
+
+```text
+chunk_size = 300
+chunk_overlap = 50
+```
+
+### Updated
+
+```text
+chunk_size = 400
+chunk_overlap = 60
+```
+
+The larger chunks were intended to preserve more surrounding context such as section information, recommendations, explanations, and scope.
+
+## 28.2 Hybrid Retrieval
+
+The updated system combines Pinecone semantic retrieval with BM25 keyword retrieval.
+
+```text
+                User Question
+                     |
+          +----------+----------+
+          |                     |
+          v                     v
+      Pinecone                 BM25
+      Semantic                Keyword
+      Retrieval              Retrieval
+          |                     |
+          +----------+----------+
+                     |
+                     v
+             EnsembleRetriever
+```
+
+The ensemble uses:
+
+```python
+weights = [0.8, 0.2]
+```
+
+This gives greater weight to semantic retrieval while allowing BM25 to contribute exact keyword matching.
+
+BM25 is useful for context-specific terms such as:
+
+```text
+workplace
+healthcare
+general
+2024
+2026
+version
+```
+
+## 28.3 MMR Retrieval
+
+The Pinecone retriever was changed to MMR retrieval.
+
+```python
+search_kwargs = {
+    "k": 3,
+    "fetch_k": 8,
+    "lambda_mult": 0.5
+}
+```
+
+MMR considers both relevance to the query and diversity among selected results. This can reduce redundant chunks when multiple documents contain similar information.
+
+## 28.4 Metadata-Aware Generation
+
+The generation model receives metadata together with retrieved content, including information such as:
+
+- Document ID
+- Topic
+- Scope / Context
+- Version
+- Effective Date
+
+The updated prompt instructs the model to:
+
+1. Use only retrieved evidence.
+2. Check document metadata.
+3. Match the source context to the question.
+4. Check version and effective date.
+5. Avoid mixing different contexts.
+6. Identify genuine conflicts.
+7. Avoid unsupported claims.
+8. Say when evidence is insufficient.
+9. Cite only documents that directly support the answer.
+
+## 28.5 Structured Citation Handling
+
+The generation model returns structured citation information containing:
+
+```text
+doc_id
+version
+```
+
+The model is instructed to cite only documents that directly support the final answer and to use the exact document ID and version from the retrieved evidence.
+
+---
+
+# 29. After-Update Evaluation Results
+
+After applying the targeted update, the **same 25 adversarial tests** were executed again.
+
+## 29.1 After-Update Failure Rates
+
+| Failure Mode | Total Tests | Actual Failures | Failure Rate | Detector Flags |
+|---|---:|---:|---:|---:|
+| Hallucination | 10 | 0 | 0% | 0 |
+| Wrong Citation | 10 | 0 | 0% | 1 |
+| Self-Contradiction | 5 | 0 | 0% | 0 |
+| **Overall** | **25** | **0** | **0%** | **1** |
+
+After the update, no actual failures were confirmed in the 25-test evaluation set.
+
+## 29.2 After-Update Detector Performance
+
+| Metric | Hallucination | Wrong Citation | Self-Contradiction | Overall |
+|---|---:|---:|---:|---:|
+| Total Tests | 10 | 10 | 5 | 25 |
+| Actual Failures | 0 | 0 | 0 | 0 |
+| Detector Flags | 0 | 1 | 0 | 1 |
+| True Positives | 0 | 0 | 0 | 0 |
+| False Positives | 0 | 1 | 0 | 1 |
+| False Negatives | 0 | 0 | 0 | 0 |
+| True Negatives | 10 | 9 | 5 | 24 |
+| Accuracy | 100% | 90% | 100% | **96%** |
+| Specificity | 100% | 90% | 100% | **96%** |
+
+The remaining detector flag was manually classified as a false positive.
+
+---
+
+# 30. Before vs After Comparison
+
+The same 25 adversarial tests were used before and after the update.
+
+## 30.1 Overall Metrics
+
+| Metric | Baseline | After Update | Change |
+|---|---:|---:|---:|
+| Total Tests | 25 | 25 | — |
+| Actual Failures | **1** | **0** | -1 |
+| Actual Failure Rate | **4%** | **0%** | **-4 percentage points** |
+| Detector Flags | 5 | 1 | -4 |
+| True Positives | 1 | 0 | -1 |
+| False Positives | 4 | 1 | -3 |
+| False Negatives | 0 | 0 | 0 |
+| True Negatives | 20 | 24 | +4 |
+| Detector Accuracy | **84%** | **96%** | **+12 percentage points** |
+| Detector Specificity | **83.33%** | **96%** | **+12.67 percentage points** |
+
+## 30.2 Failure-Mode Comparison
+
+| Failure Mode | Baseline Actual Failures | Baseline Failure Rate | After Update Actual Failures | After Update Failure Rate |
+|---|---:|---:|---:|---:|
+| Hallucination | 0/10 | 0% | 0/10 | 0% |
+| Wrong Citation | 1/10 | **10%** | 0/10 | **0%** |
+| Self-Contradiction | 0/5 | 0% | 0/5 | 0% |
+| **Overall** | **1/25** | **4%** | **0/25** | **0%** |
+
+---
+
+# 31. C02 Before vs After
+
+C02 was the confirmed baseline failure and therefore the main test used to evaluate the targeted intervention.
+
+## Before Update
+
+```text
+Test ID: C02
+Mode: wrong_citation
+
+flagged = True
+actual_failure = True
+```
+
+The baseline system could mix information between:
+
+```text
+D09 → General Exercise
+D10 → Workplace Exercise
+```
+
+This resulted in incorrect source attribution.
+
+## After Update
+
+```text
+Test ID: C02
+Mode: wrong_citation
+
+flagged = False
+actual_failure = False
+```
+
+The updated system correctly selected the workplace-specific source:
+
+```text
+D10 (Version 1.0)
+```
+
+The answer was therefore supported by the appropriate context-specific document.
+
+---
+
+# 32. Why Did the Results Change?
+
+The improvement is attributed to the combined updated RAG configuration.
+
+### 1. Larger Chunks
+
+Changing from `300/50` to `400/60` provided more surrounding context inside retrieved chunks.
+
+### 2. Hybrid Retrieval
+
+BM25 added exact keyword matching alongside semantic retrieval. This is useful when context-specific words such as `workplace` are important.
+
+### 3. MMR
+
+MMR helped balance relevance and diversity and reduce redundant retrieval.
+
+### 4. Controlled Retrieval Context
+
+Passing a smaller set of relevant chunks to the generation stage reduced unnecessary similar evidence.
+
+### 5. Metadata-Aware Generation
+
+The LLM received metadata such as topic, context, version, and effective date and was explicitly instructed to check it before answering.
+
+### 6. More Precise Prompting
+
+The updated prompt explicitly instructed the model not to mix information from different contexts unless the question asks for a comparison.
+
+### 7. Structured Citation Selection
+
+The model was instructed to select only documents that directly support the final answer.
+
+Together, these changes were intended to reduce the source-attribution problem identified in C02.
+
+---
+
+# 33. Important Experimental Limitation
+
+Several related components were changed together.
+
+Therefore, the experiment demonstrates the effect of the **combined targeted intervention** rather than proving that one individual change was solely responsible for the improvement.
+
+The experiment does not isolate the individual contribution of:
+
+- Chunking
+- BM25
+- MMR
+- Retrieval size
+- Prompting
+- Metadata
+- Citation handling
+
+The reported 0% actual failure rate applies only to this 25-question engineered evaluation set.
+
+---
+
+# 34. Post-Mortem: Why This Red-Team Approach?
+
+The red-team harness was kept separate from the RAG application so that
+the RAG system remains the system under test.
+
+The three failure modes were selected because they test different parts
+of a RAG system:
+
+``` text
+Hallucination
+    ↓
+Can the model invent unsupported information?
+
+Wrong Citation
+    ↓
+Can the system attribute a claim to the wrong source?
+
+Self-Contradiction
+    ↓
+Can the system produce inconsistent answers to related questions?
+```
+
+An LLM-based structured detector was selected because these checks
+require semantic comparison rather than only exact string matching.
+
+For example, wrong-citation detection requires checking whether a cited
+source actually supports a generated claim. Self-contradiction requires
+understanding whether two different answers refer to the same underlying
+fact or to different contexts/versions.
+
+Manual verification was retained for the small current test set so that
+detector mistakes could be separated from real RAG failures.
+
+------------------------------------------------------------------------
+
+# 35. Alternatives Considered
+
+## Rule-Based Detection
+
+A deterministic system could compare answers with expected values and
+expected source IDs.
+
+Advantages:
+
+-   Deterministic
+-   Cheap
+-   Reproducible
+
+Disadvantages:
+
+-   Requires more hand-written rules
+-   Less flexible for open-ended answers
+-   More difficult to generalize
+
+## Embedding-Based Evaluation
+
+Generated answers could be compared with reference answers using
+semantic similarity.
+
+Advantages:
+
+-   Automated
+-   Scales better than manual comparison
+
+Disadvantages:
+
+-   Similar wording does not guarantee factual correctness
+-   Does not directly establish citation correctness
+
+## Dedicated RAG Evaluation Frameworks
+
+A dedicated evaluation framework could provide additional retrieval and
+generation metrics.
+
+For this assignment, the custom detector was preferred because it
+directly targets the three required failure modes and keeps the
+implementation understandable.
+
+------------------------------------------------------------------------
+
+# 36. What Is Likely to Break at Larger Scale?
+
+### Larger document collections
+
+With thousands or millions of documents, simple top-K retrieval may
+return many similar chunks.
+
+A stronger production pipeline would likely require:
+
+``` text
+Retriever
+   ↓
+Reranker
+   ↓
+Context Filtering
+   ↓
+Generation
+```
+
+### More document versions
+
+As the number of versions grows, version-aware retrieval becomes more
+important.
+
+### Larger red-team suites
+
+Manual verification of `actual_failure` would not scale to thousands of
+tests.
+
+A larger evaluation system would need stronger ground truth, automated
+scoring, sampling, and human audits.
+
+### Larger contexts
+
+Passing too many retrieved chunks to the LLM increases token usage and
+can increase the chance of evidence mixing.
+
+------------------------------------------------------------------------
+
+# 37. One Practical Robustness Idea
+
+A practical next improvement would be a **context-aware reranking
+stage**.
+
+The reranker could score each candidate using:
+
+``` text
+Query relevance
++
+Topic match
++
+Scope/context match
++
+Version/date match
+```
+
+For example:
+
+``` text
+Question:
+workplace exercise warm-up
+
+D09:
+General Exercise
+
+D10:
+Workplace Exercise
+```
+
+The reranker could give additional weight to the `workplace` context and
+prioritize D10.
+
+This would reduce the chance that a semantically similar but
+contextually incorrect document reaches the generation stage.
+
+------------------------------------------------------------------------
+
+# 38. Submission Checklist
+
+Before submitting:
+
+-   [ ] `README.md`
+-   [ ] `requirements.txt`
+-   [ ] `.gitignore`
+-   [ ] `.env` excluded from Git
+-   [ ] 16 knowledge-base documents
+-   [ ] `ground_truth.json`
+-   [ ] Working Streamlit application
+-   [ ] Working LangGraph workflow
+-   [ ] Pinecone retrieval
+-   [ ] Citations returned with answers
+-   [ ] Retrieved evidence visible
+-   [ ] Red-team questions
+-   [ ] Red-team harness
+-   [ ] CSV test results
+-   [ ] Evaluation summary
+-   [ ] Failure analysis
+-   [ ] Baseline results
+-   [ ] Targeted update
+-   [ ] After-fix results
+-   [ ] Before/after comparison
+-   [ ] Clean-environment test
+-   [ ] Supporting PDF report
+
+------------------------------------------------------------------------
+
+# 39. Quick Start
+
+``` bash
+# Create environment
+python -m venv venv
+
+# Activate on Windows
+venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Or, if using the project configuration
+# pip install .
+
+# Configure .env
+# OPENAI_API_KEY=...
+# PINECONE_API_KEY=...
+
+# Start application
+streamlit run app.py
+
+# Run red-team tests
+python red_team/run_tests.py
+
+# Generate evaluation summary
+python eval.py
+```
+
+The project demonstrates the complete workflow:
+
+``` text
+Build RAG
+   ↓
+Run Baseline
+   ↓
+Red-Team
+   ↓
+Measure Failures
+   ↓
+Analyze Root Cause
+   ↓
+Apply Targeted Update
+   ↓
+Rerun Same Tests
+   ↓
+Compare Before vs After
+```
+
+The baseline produced **1 confirmed failure in 25 tests (4%)**. After
+the combined targeted update, **0 confirmed failures were observed in
+the same 25-test set (0%)**. Detector accuracy improved from **84% to
+96%** and detector specificity improved from **83.33% to 96%**.
